@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+{% include "header.html" %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Eco-Friendly-Nav</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <style>
+        #map { height: 80vh; }
+        .form-inline { margin: 10px; }
+    </style>
+    <link rel="icon" href="../assets/favicon/icon.png">
+</head>
+<body>
+<div class="form-inline">
+    <input type="text" class="form-control mb-2 mr-sm-2" id="origin" placeholder="Origin">
+    <input type="text" class="form-control mb-2 mr-sm-2" id="destination" placeholder="Destination">
+    <button class="btn btn-primary mb-2" onclick="calculateRoute()">Calculate Route</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.9/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    var map; // Define map outside to make it accessible to all functions
+    var lastRouteControl = null; // Hold the last routing control for carbon footprint calculations
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        map = L.map('map').setView([latitude, longitude], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+        }).addTo(map);
+    });
+
+    function calculateRoute() {
+        var origin = document.getElementById('origin').value;
+        var destination = document.getElementById('destination').value;
+        var geocoder = L.Control.Geocoder.nominatim();
+
+        geocoder.geocode(origin, function(results) {
+            var originLatLng = results[0].center;
+
+            geocoder.geocode(destination, function(results) {
+                var destinationLatLng = results[0].center;
+
+                if (lastRouteControl) {
+                    map.removeControl(lastRouteControl);
+                }
+
+                lastRouteControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(originLatLng.lat, originLatLng.lng),
+                        L.latLng(destinationLatLng.lat, destinationLatLng.lng)
+                    ],
+                    routeWhileDragging: true,
+                    geocoder: L.Control.Geocoder.nominatim(),
+                    lineOptions: {
+                        styles: [{color: '#FF5733', opacity: 1, weight: 5}]
+                    }
+                }).addTo(map);
+
+                lastRouteControl.on('routesfound', function(e) {
+                    var routes = e.routes;
+                    var summary = routes[0].summary;
+                    lastRouteControl.totalDistance = summary.totalDistance;
+                    updateCarbonFootprint();
+                });
+            });
+        });
+    }
+
+    function updateCarbonFootprint() {
+        if (lastRouteControl && lastRouteControl.totalDistance) {
+            var carbonFootprint = (lastRouteControl.totalDistance * 0.000134).toFixed(2);
+            $('#showCarbonFootprint').text('Estimated Carbon Footprint: ' + carbonFootprint + ' kg of CO2');
+        } else {
+            $('#showCarbonFootprint').text('Please calculate a route first.');
+        }
+    }
+    
+
+</script>
+
+{% include "footer.html" %}
+</body>
+</html>
