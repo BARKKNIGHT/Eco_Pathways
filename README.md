@@ -5,6 +5,10 @@ Instructions to run:
 2. In your terminal run:
 ##
     pip install -r requirements.txt
-4. Then run the flask backend by the following command:
+3. Then run the flask backend by the following command:
 ##
     flask run
+<hr>
+4. DEMO: 
+##
+    <a href="icebea.pyanywhere.com">Link</a>
